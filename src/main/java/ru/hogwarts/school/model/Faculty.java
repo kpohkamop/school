@@ -1,9 +1,8 @@
 package ru.hogwarts.school.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -14,8 +13,11 @@ public class Faculty {
     private String name;
     private String color;
 
+    @OneToMany(mappedBy = "faculty")
+    @JsonIgnore  // ЭТО ВАЖНО! Игнорируем список студентов при сериализации
+    private List<Student> students;
+
     public Faculty() {
-        // Конструктор по умолчанию для JPA
     }
 
     public Faculty(Long id, String name, String color) {
@@ -24,6 +26,7 @@ public class Faculty {
         this.color = color;
     }
 
+    // Геттеры и сеттеры
     public Long getId() {
         return id;
     }
@@ -48,12 +51,22 @@ public class Faculty {
         this.color = color;
     }
 
+    public List<Student> getStudents() {
+        return students;
+    }
+
+    public void setStudents(List<Student> students) {
+        this.students = students;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Faculty faculty = (Faculty) o;
-        return Objects.equals(id, faculty.id) && Objects.equals(name, faculty.name) && Objects.equals(color, faculty.color);
+        return Objects.equals(id, faculty.id) &&
+                Objects.equals(name, faculty.name) &&
+                Objects.equals(color, faculty.color);
     }
 
     @Override
