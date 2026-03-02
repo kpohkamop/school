@@ -1,5 +1,6 @@
 package ru.hogwarts.school.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.util.Objects;
@@ -9,13 +10,18 @@ public class Student {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String name;
     private int age;
 
     @ManyToOne
     @JoinColumn(name = "faculty_id")
-    @JsonIgnoreProperties("students")  // ЭТО ВАЖНО! Игнорируем поле students в Faculty
+    @JsonIgnoreProperties("students")
     private Faculty faculty;
+
+    @OneToOne(mappedBy = "student")
+    @JsonIgnore
+    private Avatar avatar;
 
     public Student() {
     }
@@ -57,6 +63,14 @@ public class Student {
 
     public void setFaculty(Faculty faculty) {
         this.faculty = faculty;
+    }
+
+    public Avatar getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(Avatar avatar) {
+        this.avatar = avatar;
     }
 
     @Override
