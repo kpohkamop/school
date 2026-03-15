@@ -4,7 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import ru.hogwarts.school.model.Avatar;
 import ru.hogwarts.school.model.Student;
@@ -17,11 +20,11 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 @Service
+@Transactional
 public class AvatarService {
 
     private static final Logger logger = LoggerFactory.getLogger(AvatarService.class);
@@ -44,28 +47,23 @@ public class AvatarService {
     public void uploadAvatar(Long studentId, MultipartFile file) throws IOException {
         logger.info("Загрузка аватарки для студента с ID: {}", studentId);
 
-        // Проверяем существование студента
         Student student = studentService.findStudent(studentId);
         if (student == null) {
             throw new IllegalArgumentException("Студент с ID " + studentId + " не найден");
         }
 
-        // Создаем директорию для аватарок, если её нет
         Path avatarsPath = Paths.get(avatarsDir);
         if (!Files.exists(avatarsPath)) {
             Files.createDirectories(avatarsPath);
         }
 
-        // Генерируем путь для сохранения файла
         String fileExtension = getExtension(file.getOriginalFilename());
         String fileName = studentId + "_" + System.currentTimeMillis() + fileExtension;
         Path filePath = Paths.get(avatarsDir, fileName);
 
-        // Сохраняем файл на диск
         Files.write(filePath, file.getBytes(), CREATE_NEW);
         logger.debug("Файл сохранен на диск: {}", filePath);
 
-        // Создаем или обновляем запись в БД
         Avatar avatar = avatarRepository.findByStudentId(studentId)
                 .orElse(new Avatar());
 
@@ -73,9 +71,6 @@ public class AvatarService {
         avatar.setFilePath(filePath.toString());
         avatar.setFileSize(file.getSize());
         avatar.setMediaType(file.getContentType());
-
-        // Для демонстрации сохраняем также и данные в БД
-        // (можно убрать, если не нужно хранить в БД)
         avatar.setData(file.getBytes());
 
         avatarRepository.save(avatar);
@@ -85,6 +80,7 @@ public class AvatarService {
     /**
      * Получение аватарки из БД
      */
+    @Transactional(readOnly = true)
     public Avatar getAvatarFromDb(Long studentId) {
         logger.info("Получение аватарки из БД для студента: {}", studentId);
         return avatarRepository.findByStudentId(studentId)
@@ -94,6 +90,7 @@ public class AvatarService {
     /**
      * Получение аватарки из файловой системы
      */
+    @Transactional(readOnly = true)
     public byte[] getAvatarFromFile(Long studentId) throws IOException {
         logger.info("Получение аватарки из файла для студента: {}", studentId);
 
@@ -106,6 +103,16 @@ public class AvatarService {
         }
 
         return Files.readAllBytes(filePath);
+    }
+
+    /**
+     * Получение аватарок с пагинацией
+     */
+    @Transactional(readOnly = true)
+    public Page<Avatar> getAllAvatars(Pageable pageable) {
+        logger.info("Получение аватарок с пагинацией: страница {}, размер {}",
+                pageable.getPageNumber(), pageable.getPageSize());
+        return avatarRepository.findAll(pageable);
     }
 
     /**
@@ -139,11 +146,9 @@ public class AvatarService {
                 .orElse(null);
 
         if (avatar != null) {
-            // Удаляем файл с диска
             Path filePath = Paths.get(avatar.getFilePath());
             Files.deleteIfExists(filePath);
 
-            // Удаляем запись из БД
             avatarRepository.delete(avatar);
             logger.info("Аватарка удалена");
         }

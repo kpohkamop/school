@@ -9,6 +9,7 @@ import ru.hogwarts.school.service.StudentService;
 import ru.hogwarts.school.service.FacultyService;
 
 import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping("/student")
@@ -56,6 +57,29 @@ public class StudentController {
     @GetMapping
     public ResponseEntity<Collection<Student>> getAllStudents() {
         return ResponseEntity.ok(studentService.getAllStudents());
+    }
+
+    // ============== НОВЫЕ ЭНДПОИНТЫ С SQL ==============
+
+    @GetMapping("/count")
+    public ResponseEntity<Integer> getCountOfStudents() {
+        int count = studentService.getCountOfStudents();
+        return ResponseEntity.ok(count);
+    }
+
+    @GetMapping("/average-age")
+    public ResponseEntity<Double> getAverageAge() {
+        double averageAge = studentService.getAverageAge();
+        return ResponseEntity.ok(averageAge);
+    }
+
+    @GetMapping("/last-five")
+    public ResponseEntity<List<Student>> getLastFiveStudents() {
+        List<Student> lastFiveStudents = studentService.getLastFiveStudents();
+        if (lastFiveStudents.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(lastFiveStudents);
     }
 
     // ============== ФИЛЬТРАЦИЯ ==============

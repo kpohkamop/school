@@ -9,6 +9,7 @@ import ru.hogwarts.school.repository.StudentRepository;
 import ru.hogwarts.school.repository.FacultyRepository;
 
 import java.util.Collection;
+import java.util.List;
 
 @Service
 @Transactional
@@ -60,6 +61,23 @@ public class StudentService {
     @Transactional(readOnly = true)
     public Collection<Student> findByAgeBetween(int min, int max) {
         return studentRepository.findByAgeBetween(min, max);
+    }
+
+    // ==================== НОВЫЕ МЕТОДЫ С SQL ====================
+
+    @Transactional(readOnly = true)
+    public int getCountOfStudents() {
+        return studentRepository.getCountOfStudents();
+    }
+
+    @Transactional(readOnly = true)
+    public double getAverageAge() {
+        return studentRepository.getAverageAge();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Student> getLastFiveStudents() {
+        return studentRepository.getLastFiveStudents();
     }
 
     // ==================== СВЯЗИ С ФАКУЛЬТЕТАМИ ====================

@@ -2,6 +2,9 @@ package ru.hogwarts.school.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,6 +15,7 @@ import ru.hogwarts.school.model.Avatar;
 import ru.hogwarts.school.service.AvatarService;
 
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/avatar")
@@ -31,7 +35,7 @@ public class AvatarController {
     }
 
     /**
-     * Эндпоинт 1: Загрузка аватарки (сохраняется и в БД, и на диск)
+     * Эндпоинт 1: Загрузка аватарки
      */
     @PostMapping(value = "/{studentId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadAvatar(
@@ -99,7 +103,19 @@ public class AvatarController {
     }
 
     /**
-     * Дополнительный эндпоинт: Получение превью аватарки
+     * Эндпоинт 4: Получение аватарок с пагинацией
+     */
+    @GetMapping("/page")
+    public ResponseEntity<Page<Avatar>> getAllAvatars(
+            @RequestParam int page,
+            @RequestParam int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Avatar> avatarPage = avatarService.getAllAvatars(pageable);
+        return ResponseEntity.ok(avatarPage);
+    }
+
+    /**
+     * Эндпоинт 5: Получение превью аватарки
      */
     @GetMapping(value = "/{studentId}/preview", produces = MediaType.IMAGE_JPEG_VALUE)
     public ResponseEntity<byte[]> getAvatarPreview(@PathVariable Long studentId) {
@@ -123,7 +139,7 @@ public class AvatarController {
     }
 
     /**
-     * Дополнительный эндпоинт: Удаление аватарки
+     * Эндпоинт 6: Удаление аватарки
      */
     @DeleteMapping("/{studentId}")
     public ResponseEntity<String> deleteAvatar(@PathVariable Long studentId) {
