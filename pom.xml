@@ -60,22 +60,40 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Jackson for JSON handling (включен в spring-boot-starter-web) -->
-		<!-- Этот dependency уже есть, не нужно добавлять отдельно -->
+		<!-- ======================== -->
+		<!-- DEPENDENCIES FOR TESTING -->
+		<!-- ======================== -->
 
-		<!-- Spring Boot Test -->
+		<!-- Spring Boot Test Starter (включает JUnit 5, Mockito, AssertJ, TestRestTemplate, MockMvc) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
+			<!-- Исключаем старые версии JUnit, если нужно -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.junit.vintage</groupId>
+					<artifactId>junit-vintage-engine</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 
-		<!-- H2 Database for testing (опционально) -->
+		<!-- JSON Path для проверки JSON ответов в тестах -->
+		<dependency>
+			<groupId>com.jayway.jsonpath</groupId>
+			<artifactId>json-path</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- H2 Database for testing (вместо PostgreSQL) -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
+			<scope>test</scope>
 		</dependency>
+
+		<!-- AssertJ Fluent Assertions (уже включен в spring-boot-starter-test) -->
+		<!-- Mockito Core (уже включен в spring-boot-starter-test) -->
 	</dependencies>
 
 	<build>
@@ -101,6 +119,20 @@
 				<configuration>
 					<source>17</source>
 					<target>17</target>
+				</configuration>
+			</plugin>
+
+			<!-- Maven Surefire Plugin для запуска тестов -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>**/*Test.java</include>
+					</includes>
+					<excludes>
+						<exclude>**/*Abstract*</exclude>
+					</excludes>
 				</configuration>
 			</plugin>
 		</plugins>
