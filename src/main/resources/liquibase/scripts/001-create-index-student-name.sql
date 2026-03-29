@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_student_name ON student (name);
