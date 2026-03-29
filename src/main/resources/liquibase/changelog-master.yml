@@ -1,0 +1,55 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-index-student-name
+      author: hogwarts
+      description: Создание индекса для поиска по имени студента
+      changes:
+        - sqlFile:
+            path: liquibase/scripts/001-create-index-student-name.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true
+
+  - changeSet:
+      id: 002-create-index-faculty-name-color
+      author: hogwarts
+      description: Создание составного индекса для поиска по названию и цвету факультета
+      changes:
+        - sqlFile:
+            path: liquibase/scripts/002-create-index-faculty-name-color.sql
+            relativeToChangelogFile: false
+            splitStatements: true
+            stripComments: true
+            databaseChangeLog:
+              - changeSet:
+                  id: 000-insert-test-data
+                  author: hogwarts
+                  description: Вставка тестовых данных (факультеты и студенты)
+                  changes:
+                    - sqlFile:
+                        path: liquibase/scripts/data.sql
+                        relativeToChangelogFile: false
+                        splitStatements: true
+                        stripComments: true
+
+              - changeSet:
+                  id: 001-create-index-student-name
+                  author: hogwarts
+                  description: Создание индекса для поиска по имени студента
+                  changes:
+                    - sqlFile:
+                        path: liquibase/scripts/001-create-index-student-name.sql
+                        relativeToChangelogFile: false
+                        splitStatements: true
+                        stripComments: true
+
+              - changeSet:
+                  id: 002-create-index-faculty-name-color
+                  author: hogwarts
+                  description: Создание составного индекса для поиска по названию и цвету факультета
+                  changes:
+                    - sqlFile:
+                        path: liquibase/scripts/002-create-index-faculty-name-color.sql
+                        relativeToChangelogFile: false
+                        splitStatements: true
+                        stripComments: true
