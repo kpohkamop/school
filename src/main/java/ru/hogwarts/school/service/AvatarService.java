@@ -41,19 +41,18 @@ public class AvatarService {
         this.studentService = studentService;
     }
 
-    /**
-     * Загрузка аватарки для студента
-     */
     public void uploadAvatar(Long studentId, MultipartFile file) throws IOException {
-        logger.info("Загрузка аватарки для студента с ID: {}", studentId);
+        logger.info("Was invoked method for upload avatar for student with id: {}", studentId);
 
         Student student = studentService.findStudent(studentId);
         if (student == null) {
+            logger.error("Student not found with id: {}", studentId);
             throw new IllegalArgumentException("Студент с ID " + studentId + " не найден");
         }
 
         Path avatarsPath = Paths.get(avatarsDir);
         if (!Files.exists(avatarsPath)) {
+            logger.debug("Creating avatars directory: {}", avatarsDir);
             Files.createDirectories(avatarsPath);
         }
 
@@ -62,7 +61,7 @@ public class AvatarService {
         Path filePath = Paths.get(avatarsDir, fileName);
 
         Files.write(filePath, file.getBytes(), CREATE_NEW);
-        logger.debug("Файл сохранен на диск: {}", filePath);
+        logger.debug("File saved to disk: {}", filePath);
 
         Avatar avatar = avatarRepository.findByStudentId(studentId)
                 .orElse(new Avatar());
@@ -74,52 +73,51 @@ public class AvatarService {
         avatar.setData(file.getBytes());
 
         avatarRepository.save(avatar);
-        logger.info("Аватарка для студента {} успешно загружена", studentId);
+        logger.info("Avatar successfully uploaded for student with id: {}", studentId);
     }
 
-    /**
-     * Получение аватарки из БД
-     */
     @Transactional(readOnly = true)
     public Avatar getAvatarFromDb(Long studentId) {
-        logger.info("Получение аватарки из БД для студента: {}", studentId);
+        logger.info("Was invoked method for get avatar from DB for student: {}", studentId);
         return avatarRepository.findByStudentId(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("Аватарка для студента " + studentId + " не найдена"));
+                .orElseThrow(() -> {
+                    logger.error("Avatar not found for student with id: {}", studentId);
+                    return new IllegalArgumentException("Аватарка для студента " + studentId + " не найдена");
+                });
     }
 
-    /**
-     * Получение аватарки из файловой системы
-     */
     @Transactional(readOnly = true)
     public byte[] getAvatarFromFile(Long studentId) throws IOException {
-        logger.info("Получение аватарки из файла для студента: {}", studentId);
+        logger.info("Was invoked method for get avatar from file for student: {}", studentId);
 
         Avatar avatar = avatarRepository.findByStudentId(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("Аватарка для студента " + studentId + " не найдена"));
+                .orElseThrow(() -> {
+                    logger.error("Avatar not found for student with id: {}", studentId);
+                    return new IllegalArgumentException("Аватарка для студента " + studentId + " не найдена");
+                });
 
         Path filePath = Paths.get(avatar.getFilePath());
         if (!Files.exists(filePath)) {
+            logger.error("Avatar file not found at path: {}", avatar.getFilePath());
             throw new IllegalArgumentException("Файл аватарки не найден: " + avatar.getFilePath());
         }
 
-        return Files.readAllBytes(filePath);
+        byte[] data = Files.readAllBytes(filePath);
+        logger.debug("Avatar file read successfully, size: {} bytes", data.length);
+        return data;
     }
 
-    /**
-     * Получение аватарок с пагинацией
-     */
     @Transactional(readOnly = true)
     public Page<Avatar> getAllAvatars(Pageable pageable) {
-        logger.info("Получение аватарок с пагинацией: страница {}, размер {}",
+        logger.info("Was invoked method for get all avatars with pagination - page: {}, size: {}",
                 pageable.getPageNumber(), pageable.getPageSize());
-        return avatarRepository.findAll(pageable);
+        Page<Avatar> avatars = avatarRepository.findAll(pageable);
+        logger.debug("Found {} avatars, total pages: {}", avatars.getNumberOfElements(), avatars.getTotalPages());
+        return avatars;
     }
 
-    /**
-     * Получение аватарки с предварительным сжатием для превью
-     */
     public byte[] getAvatarPreview(Long studentId, int width, int height) throws IOException {
-        logger.info("Получение превью аватарки {}x{} для студента: {}", width, height, studentId);
+        logger.info("Was invoked method for get avatar preview for student: {}, size: {}x{}", studentId, width, height);
 
         byte[] originalData = getAvatarFromFile(studentId);
 
@@ -133,24 +131,24 @@ public class AvatarService {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(resizedImage, "jpg", baos);
 
+        logger.debug("Avatar preview created successfully");
         return baos.toByteArray();
     }
 
-    /**
-     * Удаление аватарки
-     */
     public void deleteAvatar(Long studentId) throws IOException {
-        logger.info("Удаление аватарки для студента: {}", studentId);
+        logger.info("Was invoked method for delete avatar for student: {}", studentId);
 
-        Avatar avatar = avatarRepository.findByStudentId(studentId)
-                .orElse(null);
+        Avatar avatar = avatarRepository.findByStudentId(studentId).orElse(null);
 
         if (avatar != null) {
             Path filePath = Paths.get(avatar.getFilePath());
             Files.deleteIfExists(filePath);
+            logger.debug("Avatar file deleted: {}", filePath);
 
             avatarRepository.delete(avatar);
-            logger.info("Аватарка удалена");
+            logger.info("Avatar deleted for student with id: {}", studentId);
+        } else {
+            logger.warn("Attempt to delete non-existent avatar for student: {}", studentId);
         }
     }
 
