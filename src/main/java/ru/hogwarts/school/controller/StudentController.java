@@ -12,6 +12,7 @@ import ru.hogwarts.school.service.FacultyService;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/student")
@@ -111,6 +112,132 @@ public class StudentController {
         logger.info("Was invoked method for get average age of all students");
         double averageAge = studentService.getAverageAgeOfAllStudents();
         return ResponseEntity.ok(averageAge);
+    }
+
+    // ============== НОВЫЕ ЭНДПОИНТЫ ДЛЯ ПОТОКОВ ==============
+
+    /**
+     * Шаг 1: Параллельный вывод имен студентов
+     * GET /student/students/print-parallel
+     *
+     * Первые 2 имени - в основном потоке (main-thread)
+     * 3-4 имена - в первом параллельном потоке
+     * 5-6 имена - во втором параллельном потоке
+     */
+    @GetMapping("/students/print-parallel")
+    public void printStudentsParallel() {
+        logger.info("Was invoked method for print students names in parallel mode");
+
+        List<Student> students = studentService.getAllStudents().stream()
+                .limit(6)
+                .collect(Collectors.toList());
+
+        if (students.size() < 6) {
+            logger.warn("Not enough students to print 6 names. Found only {} students", students.size());
+            return;
+        }
+
+        System.out.println("\n========== ПАРАЛЛЕЛЬНЫЙ ВЫВОД ==========");
+
+        // Вывод первых двух имен в основном потоке
+        System.out.println("1-й студент (" + Thread.currentThread().getName() + "): " + students.get(0).getName());
+        System.out.println("2-й студент (" + Thread.currentThread().getName() + "): " + students.get(1).getName());
+
+        // Создание первого потока для 3-го и 4-го студента
+        Thread thread1 = new Thread(() -> {
+            System.out.println("3-й студент (" + Thread.currentThread().getName() + "): " + students.get(2).getName());
+            System.out.println("4-й студент (" + Thread.currentThread().getName() + "): " + students.get(3).getName());
+        });
+
+        // Создание второго потока для 5-го и 6-го студента
+        Thread thread2 = new Thread(() -> {
+            System.out.println("5-й студент (" + Thread.currentThread().getName() + "): " + students.get(4).getName());
+            System.out.println("6-й студент (" + Thread.currentThread().getName() + "): " + students.get(5).getName());
+        });
+
+        // Запуск потоков
+        thread1.start();
+        thread2.start();
+
+        // Ожидание завершения потоков
+        try {
+            thread1.join();
+            thread2.join();
+        } catch (InterruptedException e) {
+            logger.error("Thread interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("========================================\n");
+        logger.info("Parallel printing completed");
+    }
+
+    /**
+     * Шаг 2: Синхронизированный вывод имен студентов
+     * GET /student/students/print-synchronized
+     *
+     * Использует синхронизированный метод для вывода
+     */
+    @GetMapping("/students/print-synchronized")
+    public void printStudentsSynchronized() {
+        logger.info("Was invoked method for print students names in synchronized mode");
+
+        List<Student> students = studentService.getAllStudents().stream()
+                .limit(6)
+                .collect(Collectors.toList());
+
+        if (students.size() < 6) {
+            logger.warn("Not enough students to print 6 names. Found only {} students", students.size());
+            return;
+        }
+
+        System.out.println("\n========== СИНХРОНИЗИРОВАННЫЙ ВЫВОД ==========");
+
+        // Вывод первых двух имен в основном потоке
+        printNameSynchronized(1, students.get(0).getName(), Thread.currentThread().getName());
+        printNameSynchronized(2, students.get(1).getName(), Thread.currentThread().getName());
+
+        // Создание первого потока для 3-го и 4-го студента
+        Thread thread1 = new Thread(() -> {
+            printNameSynchronized(3, students.get(2).getName(), Thread.currentThread().getName());
+            printNameSynchronized(4, students.get(3).getName(), Thread.currentThread().getName());
+        });
+
+        // Создание второго потока для 5-го и 6-го студента
+        Thread thread2 = new Thread(() -> {
+            printNameSynchronized(5, students.get(4).getName(), Thread.currentThread().getName());
+            printNameSynchronized(6, students.get(5).getName(), Thread.currentThread().getName());
+        });
+
+        // Запуск потоков
+        thread1.start();
+        thread2.start();
+
+        // Ожидание завершения потоков
+        try {
+            thread1.join();
+            thread2.join();
+        } catch (InterruptedException e) {
+            logger.error("Thread interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("================================================\n");
+        logger.info("Synchronized printing completed");
+    }
+
+    /**
+     * Синхронизированный метод для вывода имени студента
+     * synchronized гарантирует, что одновременно только один поток может выполнять этот метод
+     */
+    private synchronized void printNameSynchronized(int number, String name, String threadName) {
+        System.out.println(number + "-й студент (" + threadName + "): " + name);
+        // Небольшая задержка для демонстрации синхронизации
+        try {
+            Thread.sleep(10);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     // ============== SQL ЗАПРОСЫ ==============
