@@ -11,6 +11,7 @@ import ru.hogwarts.school.repository.FacultyRepository;
 import ru.hogwarts.school.repository.StudentRepository;
 
 import java.util.Collection;
+import java.util.Comparator;
 
 @Service
 @Transactional
@@ -87,6 +88,25 @@ public class FacultyService {
         Collection<Faculty> faculties = facultyRepository.findByNameContainingIgnoreCaseOrColorContainingIgnoreCase(query, query);
         logger.debug("Found {} faculties matching query '{}'", faculties.size(), query);
         return faculties;
+    }
+
+    // ==================== НОВЫЙ МЕТОД ДЛЯ STREAM API ====================
+
+    /**
+     * Шаг 3: Получить самое длинное название факультета
+     */
+    @Transactional(readOnly = true)
+    public String getLongestFacultyName() {
+        logger.info("Was invoked method for get longest faculty name");
+
+        String longestName = facultyRepository.findAll().stream()
+                .map(Faculty::getName)                          // берем названия факультетов
+                .filter(name -> name != null && !name.isEmpty()) // фильтруем пустые
+                .max(Comparator.comparingInt(String::length))    // находим самое длинное
+                .orElse("");                                     // если нет факультетов, возвращаем пустую строку
+
+        logger.debug("Longest faculty name: '{}' (length: {})", longestName, longestName.length());
+        return longestName;
     }
 
     // ==================== СВЯЗИ СО СТУДЕНТАМИ ====================

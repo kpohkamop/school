@@ -12,6 +12,7 @@ import ru.hogwarts.school.repository.FacultyRepository;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -90,7 +91,7 @@ public class StudentService {
         return students;
     }
 
-    // ==================== НОВЫЕ МЕТОДЫ С SQL ====================
+    // ==================== SQL ЗАПРОСЫ ====================
 
     @Transactional(readOnly = true)
     public int getCountOfStudents() {
@@ -114,6 +115,44 @@ public class StudentService {
         List<Student> students = studentRepository.getLastFiveStudents();
         logger.debug("Found {} last students", students.size());
         return students;
+    }
+
+    // ==================== НОВЫЕ МЕТОДЫ ДЛЯ STREAM API ====================
+
+    /**
+     * Шаг 1: Получить всех студентов, чье имя начинается с буквы А
+     * Отсортированные в алфавитном порядке имена в верхнем регистре
+     */
+    @Transactional(readOnly = true)
+    public List<String> getStudentNamesStartingWithA() {
+        logger.info("Was invoked method for get student names starting with A");
+
+        List<String> names = studentRepository.findAll().stream()
+                .map(Student::getName)                          // берем имена
+                .filter(name -> name != null && !name.isEmpty()) // фильтруем пустые
+                .map(String::toUpperCase)                       // переводим в верхний регистр
+                .filter(name -> name.startsWith("А"))           // оставляем только начинающиеся с А
+                .sorted()                                        // сортируем в алфавитном порядке
+                .collect(Collectors.toList());
+
+        logger.debug("Found {} students with names starting with A", names.size());
+        return names;
+    }
+
+    /**
+     * Шаг 2: Получить средний возраст всех студентов
+     */
+    @Transactional(readOnly = true)
+    public double getAverageAgeOfAllStudents() {
+        logger.info("Was invoked method for get average age of all students");
+
+        double averageAge = studentRepository.findAll().stream()
+                .mapToInt(Student::getAge)      // преобразуем в IntStream
+                .average()                       // вычисляем среднее
+                .orElse(0.0);                    // если студентов нет, возвращаем 0.0
+
+        logger.debug("Average age of all students: {}", averageAge);
+        return averageAge;
     }
 
     // ==================== СВЯЗИ С ФАКУЛЬТЕТАМИ ====================
